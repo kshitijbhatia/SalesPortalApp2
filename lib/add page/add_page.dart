@@ -1,15 +1,11 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:sales_portal_app/add%20page/add_am_page.dart';
-import 'package:sales_portal_app/add%20page/add_dealer_page.dart';
-import 'package:sales_portal_app/add%20page/add_ho_page.dart';
-import 'package:sales_portal_app/add%20page/add_nsm1_page.dart';
-import 'package:sales_portal_app/add%20page/add_nsm_page.dart';
-import 'package:sales_portal_app/add%20page/add_tm_page.dart';
-import 'package:sales_portal_app/add%20page/add_vp1_page.dart';
-import 'package:sales_portal_app/add%20page/add_vp2_page.dart';
-import 'package:sales_portal_app/add%20page/add_vp_page.dart';
-import 'package:sales_portal_app/resources/sales_data.dart';
+import 'package:sales_portal_app_2/add%20page/add_sub_page.dart';
+import 'package:sales_portal_app_2/resources/api_service.dart';
+import 'package:sales_portal_app_2/model/column_data.dart';
+import 'package:sales_portal_app_2/model/sales_data.dart';
 
 class AddPage extends StatefulWidget {
   const AddPage({required this.listSales, super.key});
@@ -24,7 +20,12 @@ class _AddPageState extends State<AddPage> {
   int currentPage = 1;
   List<TextEditingController> controllers = [];
 
-  late FToast fToast; 
+  late FToast fToast;
+
+  List<Map<String, dynamic>> dealerHeaderList = [];
+
+  int counter = 0;
+  APIService apiservice = APIService.instance;
 
   final TextEditingController _dealerCodeController = TextEditingController();
   final TextEditingController _dealerNameController = TextEditingController();
@@ -138,6 +139,22 @@ class _AddPageState extends State<AddPage> {
     });
   }
 
+  void addData() async {
+    Map<String, dynamic> response = await apiservice.sendData(controllers);
+    if (response['msg'] == 'success') {
+      Sales sales = response['data'];
+      Navigator.pop(context, {'msg': 'success', 'data': sales});
+      return;
+    } else if (response['msg'] == 'error' || response['msg'] == 'failure') {
+      counter++;
+      if (counter == 2) {
+        Navigator.pop(context, {'msg': "failure"});
+        return;
+      }
+      showToast('Failed to add Data, please try again');
+    }
+  }
+
   void updatePageBackward() {
     setState(() {
       currentPage = currentPage - 1;
@@ -150,48 +167,48 @@ class _AddPageState extends State<AddPage> {
     fToast = FToast();
     fToast.init(context);
     controllers = [
-    _dealerCodeController,
-    _dealerNameController,
-    _dealerEmailAddressController,
-    _dealerContactNumberController,
-    _tmRoleController,
-    _tmNameController,
-    _tmEmailAddressController,
-    _tmPhoneNumberController,
-    _tmUserNameController,
-    _amRoleController,
-    _amNameController,
-    _amEmailAddressController,
-    _amPhoneNumberController,
-    _amUserNameController,
-    _nsmRoleController,
-    _nsmNameController,
-    _nsmEmailAddressController,
-    _nsmPhoneNumberController,
-    _nsmUserNameController,
-    _nsm1NameController,
-    _nsm1EmailAddressController,
-    _nsm1PhoneNumberController,
-    _nsm1UserNameController,
-    _vpRoleController,
-    _vpNameController,
-    _vpEmailAddressController,
-    _vpPhoneNumberController,
-    _vpUserNameController,
-    _vp1NameController,
-    _vp1EmailAddressController,
-    _vp1PhoneNumberController,
-    _vp1UserNameController,
-    _vp2NameController,
-    _vp2EmailAddressController,
-    _vp2PhoneNumberController,
-    _vp2UserNameController,
-    _hoRoleController,
-    _hoNameController,
-    _hoEmailAddressController,
-    _hoPhoneNumberController,
-    _hoUserNameController,
-  ];
+      _dealerCodeController,
+      _dealerNameController,
+      _dealerEmailAddressController,
+      _dealerContactNumberController,
+      _tmRoleController,
+      _tmNameController,
+      _tmEmailAddressController,
+      _tmPhoneNumberController,
+      _tmUserNameController,
+      _amRoleController,
+      _amNameController,
+      _amEmailAddressController,
+      _amPhoneNumberController,
+      _amUserNameController,
+      _nsmRoleController,
+      _nsmNameController,
+      _nsmEmailAddressController,
+      _nsmPhoneNumberController,
+      _nsmUserNameController,
+      _nsm1NameController,
+      _nsm1EmailAddressController,
+      _nsm1PhoneNumberController,
+      _nsm1UserNameController,
+      _vpRoleController,
+      _vpNameController,
+      _vpEmailAddressController,
+      _vpPhoneNumberController,
+      _vpUserNameController,
+      _vp1NameController,
+      _vp1EmailAddressController,
+      _vp1PhoneNumberController,
+      _vp1UserNameController,
+      _vp2NameController,
+      _vp2EmailAddressController,
+      _vp2PhoneNumberController,
+      _vp2UserNameController,
+      _hoRoleController,
+      _hoNameController,
+      _hoEmailAddressController,
+      _hoPhoneNumberController,
+      _hoUserNameController,
+    ];
   }
 
   void showToast(String text) {
@@ -200,140 +217,137 @@ class _AddPageState extends State<AddPage> {
         padding: const EdgeInsets.symmetric(vertical: 10),
         margin: const EdgeInsets.only(bottom: 40),
         decoration: BoxDecoration(
-          color: const Color.fromRGBO(24, 56, 131, 1),
+          color: const Color(0xFF23252A),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Center(
           child: Text(
             text,
             style: const TextStyle(
-                color: Colors.red, fontFamily: 'Roboto', fontSize: 18, fontWeight: FontWeight.w700),
+                color: Color.fromRGBO(255, 255, 255, 1.0),
+                fontFamily: 'Roboto',
+                fontSize: 18,
+                fontWeight: FontWeight.w700),
           ),
         ),
       ),
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
+    for (var i = 0; i < columnHeader.length; i++) {
+      columnHeader[i]['error'] = null;
+    }
+
+    dealerHeaderList = List.from(columnHeader.sublist(0, 3));
+    dealerHeaderList.insert(
+      0,
+      {'columnName': 'Dealer Code', 'required': true, 'error': null},
+    );
+
     return Scaffold(
       body: SafeArea(
         child: currentPage == 1
-            ? AddDealerPage(
-                dealerCodeController: _dealerCodeController,
-                dealerNameController: _dealerNameController,
-                dealerEmailAddressController: _dealerEmailAddressController,
-                dealerContactNumberController: _dealerContactNumberController,
-                updatePage: updatePageForward,
+            ? AddSubPage(
+                controllers: controllers.sublist(0, 4),
+                updatePageForward: updatePageForward,
+                columnHeaders: dealerHeaderList,
+                updatePageBackward: () {
+                  Navigator.pop(context);
+                },
+                height: 500,
                 data: widget.listSales,
-                showToast: showToast,
+                currentPage: 1,
               )
             : currentPage == 2
-                ? AddTMPage(
-                    tmRoleController: _tmRoleController,
-                    tmNameController: _tmNameController,
-                    tmEmailAddressController: _tmEmailAddressController,
-                    tmContactNumberController: _tmPhoneNumberController,
-                    tmUserNameController: _tmUserNameController,
+                ? AddSubPage(
+                    controllers: controllers.sublist(4, 9),
                     updatePageForward: updatePageForward,
+                    columnHeaders: columnHeader.sublist(3, 8),
                     updatePageBackward: updatePageBackward,
-                    showToast: showToast,
+                    height: 500,
+                    data: widget.listSales,
+                    currentPage: 2,
                   )
                 : currentPage == 3
-                    ? AddAMPage(
-                        amRoleController: _amRoleController,
-                        amNameController: _amNameController,
-                        amEmailAddressController: _amEmailAddressController,
-                        amContactNumberController: _amPhoneNumberController,
-                        amUserNameController: _amUserNameController,
+                    ? AddSubPage(
+                        controllers: controllers.sublist(9, 14),
                         updatePageForward: updatePageForward,
+                        columnHeaders: columnHeader.sublist(8, 13),
                         updatePageBackward: updatePageBackward,
-                        showToast: showToast,
+                        height: 500,
+                        data: widget.listSales,
+                        currentPage: 3,
                       )
                     : currentPage == 4
-                        ? AddNSMPage(
-                            nsmRoleController: _nsmRoleController,
-                            nsmNameController: _nsmNameController,
-                            nsmEmailAddressController:
-                                _nsmEmailAddressController,
-                            nsmContactNumberController:
-                                _nsmPhoneNumberController,
-                            nsmUserNameController: _nsmUserNameController,
+                        ? AddSubPage(
+                            controllers: controllers.sublist(14, 19),
                             updatePageForward: updatePageForward,
+                            columnHeaders: columnHeader.sublist(13, 18),
                             updatePageBackward: updatePageBackward,
-                            showToast: showToast,
+                            height: 500,
+                            data: widget.listSales,
+                            currentPage: 4,
                           )
                         : currentPage == 5
-                            ? AddNSM1Page(
-                                nsm1NameController: _nsm1NameController,
-                                nsm1EmailAddressController:
-                                    _nsm1EmailAddressController,
-                                nsm1ContactNumberController:
-                                    _nsm1PhoneNumberController,
-                                nsm1UserNameController: _nsm1UserNameController,
+                            ? AddSubPage(
+                                controllers: controllers.sublist(19, 23),
                                 updatePageForward: updatePageForward,
+                                columnHeaders: columnHeader.sublist(18, 22),
                                 updatePageBackward: updatePageBackward,
-                                showToast: showToast,
+                                height: 500,
+                                data: widget.listSales,
+                                currentPage: 5,
                               )
                             : currentPage == 6
-                                ? AddVPPage(
-                                    vpRoleController: _vpRoleController,
-                                    vpNameController: _vpNameController,
-                                    vpEmailAddressController:
-                                        _vpEmailAddressController,
-                                    vpContactNumberController:
-                                        _vpPhoneNumberController,
-                                    vpUserNameController: _vpUserNameController,
+                                ? AddSubPage(
+                                    controllers: controllers.sublist(23, 28),
                                     updatePageForward: updatePageForward,
+                                    columnHeaders: columnHeader.sublist(22, 27),
                                     updatePageBackward: updatePageBackward,
-                                    showToast: showToast,
+                                    height: 500,
+                                    data: widget.listSales,
+                                    currentPage: 6,
                                   )
                                 : currentPage == 7
-                                    ? AddVP1Page(
-                                        vp1NameController: _vp1NameController,
-                                        vp1EmailAddressController:
-                                            _vp1EmailAddressController,
-                                        vp1ContactNumberController:
-                                            _vp1PhoneNumberController,
-                                        vp1UserNameController:
-                                            _vp1UserNameController,
+                                    ? AddSubPage(
+                                        controllers:
+                                            controllers.sublist(28, 32),
                                         updatePageForward: updatePageForward,
+                                        columnHeaders:
+                                            columnHeader.sublist(27, 31),
                                         updatePageBackward: updatePageBackward,
-                                        showToast: showToast,
+                                        height: 500,
+                                        data: widget.listSales,
+                                        currentPage: 7,
                                       )
                                     : currentPage == 8
-                                        ? AddVP2Page(
-                                            vp2NameController:
-                                                _vp2NameController,
-                                            vp2EmailAddressController:
-                                                _vp2EmailAddressController,
-                                            vp2ContactNumberController:
-                                                _vp2PhoneNumberController,
-                                            vp2UserNameController:
-                                                _vp2UserNameController,
+                                        ? AddSubPage(
+                                            controllers:
+                                                controllers.sublist(32, 36),
                                             updatePageForward:
                                                 updatePageForward,
+                                            columnHeaders:
+                                                columnHeader.sublist(31, 35),
                                             updatePageBackward:
                                                 updatePageBackward,
-                                                showToast: showToast,
+                                            height: 500,
+                                            data: widget.listSales,
+                                            currentPage: 8,
                                           )
                                         : currentPage == 9
-                                            ? AddHOPage(
-                                                hoRoleController:
-                                                    _hoRoleController,
-                                                hoNameController:
-                                                    _hoNameController,
-                                                hoEmailAddressController:
-                                                    _hoEmailAddressController,
-                                                hoContactNumberController:
-                                                    _hoPhoneNumberController,
-                                                hoUserNameController:
-                                                    _hoUserNameController,
+                                            ? AddSubPage(
+                                                controllers:
+                                                    controllers.sublist(36, 41),
+                                                updatePageForward: addData,
+                                                columnHeaders: columnHeader
+                                                    .sublist(35, 40),
                                                 updatePageBackward:
-                                                    updatePageBackward,  
-                                                controllers: controllers,     
-                                                showToast: showToast,
+                                                    updatePageBackward,
+                                                height: 500,
+                                                data: widget.listSales,
+                                                currentPage: 9,
                                               )
                                             : Container(),
       ),

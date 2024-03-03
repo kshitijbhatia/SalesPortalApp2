@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:sales_portal_app/home%20page/home_page.dart';
+import 'package:sales_portal_app_2/home%20page/home_page.dart';
 
 void main(){
   runApp(const MyApp());

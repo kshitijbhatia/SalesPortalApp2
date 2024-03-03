@@ -1,13 +1,13 @@
+import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:linked_scroll_controller/linked_scroll_controller.dart';
-import 'package:sales_portal_app/add%20page/add_page.dart';
-import 'package:sales_portal_app/home%20page/loading_dialog_box.dart';
-import 'package:sales_portal_app/resources/api_service.dart';
-import 'package:sales_portal_app/resources/column_data.dart';
-import 'package:sales_portal_app/resources/sales_data.dart';
-import 'package:sales_portal_app/home%20page/table_content.dart';
-import 'package:sales_portal_app/home%20page/table_header.dart';
+import 'package:sales_portal_app_2/add%20page/add_page.dart';
+import 'package:sales_portal_app_2/edit%20page/edit_page.dart';
+import 'package:sales_portal_app_2/home%20page/drop_down.dart';
+import 'package:sales_portal_app_2/home%20page/loading_dialog_box.dart';
+import 'package:sales_portal_app_2/resources/api_service.dart';
+import 'package:sales_portal_app_2/model/column_data.dart';
+import 'package:sales_portal_app_2/model/sales_data.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -19,6 +19,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   late List<Sales> data = [];
   late List<Sales> dataCopy = [];
+  Map<String, bool> isExpandedList = {};
 
   bool isLoading = true;
 
@@ -26,28 +27,11 @@ class _HomePageState extends State<HomePage> {
 
   APIService apiservice = APIService.instance;
 
-  LinkedScrollControllerGroup controllerGroup = LinkedScrollControllerGroup();
-  ScrollController? headerScrollController;
-  ScrollController? dataScrollController;
   final TextEditingController searchInputController = TextEditingController();
 
   bool changeEditIcon = false;
   bool changeSearchIcon = false;
-
-  List<Map<String, dynamic>> columnWidths = [];
-
-  void getColumnSize() {
-    for (var header in columnHeader) {
-      String columnName = header['columnName'];
-      TextSpan span =
-          TextSpan(text: columnName, style: const TextStyle(fontSize: 16));
-      TextPainter tp =
-          TextPainter(text: span, textDirection: TextDirection.ltr);
-      tp.layout();
-      double textWidth = tp.width + 50;
-      columnWidths.add({'columnName': columnName, 'width': textWidth});
-    }
-  }
+  // bool isExpanded = false;
 
   void searchData() {
     Set<Sales> res = {};
@@ -67,7 +51,7 @@ class _HomePageState extends State<HomePage> {
 
       // Search all other fields
       for (var j = 0; j < columnHeader.length; j++) {
-        var columnName = columnHeader[j]['columnName'].replaceAll(' ', '');
+        var columnName = columnHeader[j]['columnName']!.replaceAll(' ', '');
         var searchfield = salesObject[columnName]?.toLowerCase();
 
         if (searchfield == input) {
@@ -80,19 +64,31 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  void editData(Sales salesObj, Sales resData) {
+    for (var i = 0; i < data.length; i++) {
+      if (data[i].DealerCode.toString() == salesObj.DealerCode.toString()) {
+        data.removeAt(i);
+        setState(() {
+          data.add(resData);
+        });
+        break;
+      }
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     apiservice.fetchData().then((salesData) {
+      for (var salesObj in salesData) {
+        isExpandedList[salesObj.DealerCode.toString()] = false;
+      }
       setState(() {
         data = salesData;
         dataCopy = data;
         isLoading = false;
       });
     });
-    headerScrollController = controllerGroup.addAndGet();
-    dataScrollController = controllerGroup.addAndGet();
-    getColumnSize();
     fToast = FToast();
     fToast.init(context);
   }
@@ -129,6 +125,31 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      floatingActionButton: FloatingActionButton(
+        foregroundColor: Colors.white,
+        backgroundColor: const Color.fromRGBO(24, 56, 131, 1),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => AddPage(listSales: data),
+            ),
+          ).then((value) {
+            if (value != null) {
+              if (value['msg'] == 'failure') {
+                showToast('Failed to add data, try again later');
+              } else if (value['msg'] == 'success') {
+                Sales sales = value['data'];
+                setState(() {
+                  data.add(sales);
+                  isExpandedList.addAll({sales.DealerCode.toString(): false});
+                });
+              }
+            }
+          });
+        },
+        child: const Icon(Icons.add),
+      ),
       body: SafeArea(
         child: isLoading
             ? const LoaderDialog()
@@ -140,15 +161,41 @@ class _HomePageState extends State<HomePage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 20),
-                          child: Container(
-                            margin: const EdgeInsets.only(left: 10, right: 30),
-                            child: const Image(
-                              image: AssetImage('assets/TVS-Footer.png'),
-                              width: 140,
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 20),
+                              child: Container(
+                                margin:
+                                    const EdgeInsets.only(left: 10, right: 30),
+                                child: const Image(
+                                  image: AssetImage('assets/TVS-Footer.png'),
+                                  width: 160,
+                                ),
+                              ),
                             ),
-                          ),
+                            Container(
+                              margin: const EdgeInsets.only(right: 15),
+                              child: IconButton(
+                                onPressed: () {
+                                  setState(() {
+                                    changeSearchIcon = !changeSearchIcon;
+                                    data = dataCopy;
+                                  });
+                                },
+                                icon: changeSearchIcon
+                                    ? const Icon(
+                                        Icons.close,
+                                        color: Colors.white,
+                                      )
+                                    : const Icon(
+                                        Icons.search,
+                                        color: Colors.white,
+                                      ),
+                              ),
+                            )
+                          ],
                         ),
                         if (changeSearchIcon)
                           Row(
@@ -205,87 +252,197 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                   Expanded(
-                    child: Stack(
-                      children: [
-                        TableContent(
-                          data: data,
-                          columnWidths: columnWidths,
-                          changeEditIcon: changeEditIcon,
-                          dataScrollController: dataScrollController,
-                          showToast: showToast,
-                        ),
-                        TableHeader(
-                          changeEditIcon: changeEditIcon,
-                          headerScrollController: headerScrollController,
-                          columnWidths: columnWidths,
-                        )
-                      ],
-                    ),
-                  ),
-                  Container(
-                    height: 60,
-                    decoration: const BoxDecoration(
-                      color: Color.fromRGBO(24, 56, 131, 1),
-                      borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(10),
-                          topRight: Radius.circular(10)),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        IconButton(
-                          onPressed: () {
-                            setState(() {
-                              changeEditIcon = !changeEditIcon;
-                            });
-                          },
-                          icon: changeEditIcon
-                              ? const Icon(Icons.close)
-                              : const Icon(Icons.edit),
-                          color: Colors.white,
-                        ),
-                        IconButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => AddPage(
-                                  listSales: data,
+                    child: ListView.builder(
+                      itemCount: data.length,
+                      itemBuilder: (context, index) {
+                        Sales salesObj = data[index];
+                        String dealerCode = salesObj.DealerCode.toString();
+                        String dealerEmail = salesObj.DealerEmailAddress == ''
+                            ? 'NA'
+                            : salesObj.DealerEmailAddress;
+                        String dealerNumber =
+                            salesObj.DealerContactNumber.toString() == ''
+                                ? 'NA'
+                                : salesObj.DealerContactNumber.toString();
+                        String dealerName = salesObj.DealerName == ''
+                            ? 'NA'
+                            : salesObj.DealerName;
+                        return Card(
+                          child: Container(
+                            margin: const EdgeInsets.only(
+                                top: 5, left: 5, right: 5),
+                            padding: const EdgeInsets.only(bottom: 10),
+                            decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: Colors.black)),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Container(
+                                      // color: Colors.red,
+                                      width: 280,
+                                      padding: const EdgeInsets.only(
+                                          left: 10, top: 5),
+                                      margin: const EdgeInsets.only(top: 5),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            '${salesObj.DealerCode} ~ $dealerName',
+                                            style: isExpandedList[dealerCode]!
+                                                ? const TextStyle(
+                                                    color: Colors.black,
+                                                    fontFamily: 'Roboto',
+                                                    fontSize: 22,
+                                                  )
+                                                : const TextStyle(
+                                                    color: Colors.black,
+                                                    fontFamily: 'Roboto',
+                                                    fontSize: 16,
+                                                  ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    if (isExpandedList[
+                                        salesObj.DealerCode.toString()]!)
+                                      IconButton(
+                                        onPressed: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) {
+                                                return EditPage(
+                                                    listSales: data,
+                                                    initialData: salesObj);
+                                              },
+                                            ),
+                                          ).then((value) {
+                                            if (value != null) {
+                                              if (value['msg'] == 'failure') {
+                                                showToast(
+                                                    'Failed to edit data, please try again later');
+                                              } else if (value['msg'] ==
+                                                  'success') {
+                                                Sales resData = value['data'];
+                                                editData(salesObj, resData);
+                                              }
+                                            }
+                                          });
+                                        },
+                                        icon: const Icon(Icons.edit),
+                                      ),
+                                    IconButton(
+                                      onPressed: () {
+                                        setState(() {
+                                          isExpandedList[dealerCode] =
+                                              !isExpandedList[dealerCode]!;
+                                        });
+                                      },
+                                      icon: isExpandedList[dealerCode]!
+                                          ? const Icon(Icons.arrow_drop_up)
+                                          : const Icon(Icons.arrow_drop_down),
+                                    )
+                                  ],
                                 ),
-                              ),
-                            ).then((value) {
-                              if (value == 'failure') {
-                                showToast(
-                                    'Failed to add Data, please try later!!');
-                              } else {
-                                setState(() {
-                                  data.add(value);
-                                });
-                              }
-                            });
-                          },
-                          icon: const Icon(Icons.add),
-                          color: Colors.white,
-                        ),
-                        IconButton(
-                          onPressed: () {
-                            setState(() {
-                              if (changeSearchIcon == false) {
-                                changeSearchIcon = true;
-                              } else {
-                                setState(() {
-                                  data = dataCopy;
-                                });
-                                changeSearchIcon = false;
-                              }
-                            });
-                          },
-                          icon: changeSearchIcon
-                              ? const Icon(Icons.close)
-                              : const Icon(Icons.search),
-                          color: Colors.white,
-                        ),
-                      ],
+                                if (isExpandedList[dealerCode]!)
+                                  Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.only(
+                                      left: 10,
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Email : $dealerEmail',
+                                          style: const TextStyle(
+                                            color: Colors.black,
+                                            fontFamily: 'Roboto',
+                                            fontSize: 18,
+                                          ),
+                                        ),
+                                        Text(
+                                          'Number : $dealerNumber',
+                                          style: const TextStyle(
+                                            color: Colors.black,
+                                            fontFamily: 'Roboto',
+                                            fontSize: 18,
+                                          ),
+                                        ),
+                                        const SizedBox(
+                                          height: 10,
+                                        ),
+                                        CustomExpansionTile(
+                                          text: 'TM Info',
+                                          columnNames:
+                                              columnHeader.sublist(3, 8),
+                                          salesData: salesObj,
+                                          editData: editData,
+                                        ),
+                                        CustomExpansionTile(
+                                          text: 'AM Info',
+                                          columnNames:
+                                              columnHeader.sublist(8, 13),
+                                          salesData: salesObj,
+                                          editData: editData,
+                                        ),
+                                        CustomExpansionTile(
+                                          text: 'NSM Info',
+                                          columnNames:
+                                              columnHeader.sublist(13, 18),
+                                          salesData: salesObj,
+                                          editData: editData,
+                                        ),
+                                        CustomExpansionTile(
+                                          text: 'NSM1 Info',
+                                          columnNames:
+                                              columnHeader.sublist(18, 22),
+                                          salesData: salesObj,
+                                          editData: editData,
+                                        ),
+                                        CustomExpansionTile(
+                                          text: 'VP Info',
+                                          columnNames:
+                                              columnHeader.sublist(22, 27),
+                                          salesData: salesObj,
+                                          editData: editData,
+                                        ),
+                                        CustomExpansionTile(
+                                          text: 'VP1 Info',
+                                          columnNames:
+                                              columnHeader.sublist(27, 31),
+                                          salesData: salesObj,
+                                          editData: editData,
+                                        ),
+                                        CustomExpansionTile(
+                                          text: 'VP2 Info',
+                                          columnNames:
+                                              columnHeader.sublist(31, 35),
+                                          salesData: salesObj,
+                                          editData: editData,
+                                        ),
+                                        CustomExpansionTile(
+                                          text: 'HO Info',
+                                          columnNames:
+                                              columnHeader.sublist(35, 40),
+                                          salesData: salesObj,
+                                          editData: editData,
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                              ],
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   )
                 ],
@@ -294,3 +451,55 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Container(
+//                                       width: 340,
+//                                       padding: const EdgeInsets.only(
+//                                           left: 10, top: 5),
+//                                       margin: const EdgeInsets.only(top: 5),
+//                                       child: Column(
+//                                         crossAxisAlignment:
+//                                             CrossAxisAlignment.start,
+//                                         children: [
+//                                           Text(
+//                                             'Dealer Code : ${salesObj.DealerCode}',
+//                                             style: isExpandedList[dealerCode]!
+//                                                 ? const TextStyle(
+//                                                     color: Colors.black,
+//                                                     fontFamily: 'Roboto',
+//                                                     fontSize: 22,
+//                                                   )
+//                                                 : const TextStyle(
+//                                                     color: Colors.black,
+//                                                     fontFamily: 'Roboto',
+//                                                     fontSize: 18,
+//                                                   ),
+//                                           ),
+//                                           Text(
+//                                             'Dealer Name : ${salesObj.DealerName}',
+//                                             style: const TextStyle(
+//                                               color: Colors.black,
+//                                               fontFamily: 'Roboto',
+//                                               fontSize: 18,
+//                                             ),
+//                                           ),
+//                                         ],
+//                                       ),
+//                                     ),

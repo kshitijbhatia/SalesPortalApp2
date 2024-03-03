@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:sales_portal_app/resources/sales_data.dart';
+import 'package:sales_portal_app_2/model/sales_data.dart';
 import 'package:http/http.dart' as http;
 
 class APIService {
@@ -92,6 +92,7 @@ class APIService {
   Future<Map<String, dynamic>> editData(
       List<TextEditingController> controllers) async {
     try {
+
       Sales sales = Sales(
         DealerCode: BigInt.parse(controllers[0].text),
         DealerName: controllers[1].text,

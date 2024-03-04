@@ -1,5 +1,4 @@
 import 'dart:developer';
-
 import 'package:flutter/material.dart';
 
 class InputField extends StatefulWidget {
@@ -32,7 +31,9 @@ class _InputFieldState extends State<InputField> {
             child: TextField(
               keyboardType: widget.type,
               onChanged: (value) {
-                widget.removeError();
+                setState(() {
+                  widget.removeError();
+                });
               },
               controller: widget.controller,
               style: const TextStyle(fontFamily: 'Roboto', color: Colors.black),

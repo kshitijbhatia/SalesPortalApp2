@@ -19,7 +19,7 @@ class APIService {
         List<Sales> data = resData.map<Sales>((sale) => Sales.fromJson(sale)).toList();
         return data;
       } else {
-        throw Exception('Failed to fetch sata : ${response.statusCode}');
+        throw Exception('Failed to fetch data : ${response.statusCode}');
       }
     } catch (err) {
       throw Exception('Error fetching data : $err');

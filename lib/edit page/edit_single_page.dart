@@ -1,10 +1,9 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:sales_portal_app_2/add%20page/add_page_input.dart';
+import 'package:sales_portal_app_2/edit%20page/edit_page_input.dart';
 import 'package:sales_portal_app_2/resources/api_service.dart';
 import 'package:sales_portal_app_2/model/column_data.dart';
 import 'package:sales_portal_app_2/model/sales_data.dart';
@@ -158,6 +157,11 @@ class _EditSinglePageState extends State<EditSinglePage> {
                         ? 'Enter $columnName *'
                         : 'Enter $columnName',
                     controller: controllers[index + ind],
+                    removeError: (){
+                    setState(() {
+                      widget.columnNames[index]['error'] = null;
+                    });
+                  },
                   );
                 },
               ),
@@ -178,34 +182,27 @@ class _EditSinglePageState extends State<EditSinglePage> {
               ),
               onPressed: () {
                 for (var i = 0; i < widget.columnNames.length; i++) {
-                  log('${controllers[i + ind].text}');
                   if (widget.columnNames[i]['required'] &&
                       controllers[i + ind].text == '') {
                     setState(() {
                       widget.columnNames[i]['error'] =
                           'Please fill the required fields';
                     });
-                    log('1');
                   } else if (widget.columnNames[i]['required'] &&
                       controllers[i + ind].text != '') {
                     setState(() {
                       widget.columnNames[i]['error'] = null;
                     });
-                    log('2');
                   } else if (!widget.columnNames[i]['required']) {
                     setState(() {
                       widget.columnNames[i]['error'] = null;
                     });
-                    log('3');
                   }
-                  log('${widget.columnNames[i]['error']}');
                 }
 
                 if (checkControllers(controllers)) {
                   return;
                 }
-
-                log('Hello');
 
                 for (var i = 0; i < widget.columnNames.length; i++) {
                   String column = widget.columnNames[i]['columnName'];

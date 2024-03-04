@@ -41,24 +41,34 @@ class _HomePageState extends State<HomePage> {
       return;
     }
 
-    for (var i = 0; i < data.length; i++) {
-      var salesObject = data[i].toJson();
+    List<String> inputList = input.split(' ');
+    inputList.add(input);
 
-      // Search all dealer codes
-      if (data[i].DealerCode.toString() == input) {
-        res.add(data[i]);
-      }
+    for (input in inputList) {
+      input = input.trim();
 
-      // Search all other fields
-      for (var j = 0; j < columnHeader.length; j++) {
-        var columnName = columnHeader[j]['columnName']!.replaceAll(' ', '');
-        var searchfield = salesObject[columnName]?.toLowerCase();
+      for (var i = 0; i < data.length; i++) {
+        var salesObject = data[i].toJson();
 
-        if (searchfield == input) {
+        // Search all dealer codes
+        if (salesObject['DealerCode'].toString() == input) {
           res.add(data[i]);
+        }
+
+        // Search all other fields
+        for (var j = 0; j < columnHeader.length; j++) {
+          var columnName = columnHeader[j]['columnName']!.replaceAll(' ', '');
+          var searchFieldList =
+              salesObject[columnName]?.toLowerCase().split(' ');
+          bool result = searchFieldList!
+              .every((searchfield) => searchfield.contains(input));
+          if (result) {
+            res.add(data[i]);
+          }
         }
       }
     }
+
     setState(() {
       data = res.toList();
     });
